@@ -9,6 +9,9 @@
 //							add statistics display at the end
 //							add a dictionary to hold filter meaning and counters
 //							add help message
+//	01/10/2014	add a bunch of new filter items (config, etc)
+//				add config CFG_ALL item
+//				
 //
 using System;
 using System.IO;
@@ -18,13 +21,6 @@ using System.Collections.Generic;
 // options:
 //	search for a given pattern (module or part name)
 // highlight exception or warning
-// remove some lines (ATM, model/tex loaded)
-
-// standard marks:
-
-//	Config(ACTIVE_TEXTURE_MANAGER) ActiveTextureManagement/config/ACTIVE_TEXTURE_MANAGER
-//	Config(ACTIVE_TEXTURE_MANAGER_CONFIG)
-//	Config(AGENT)   PART  PROP   RESOURCE_DEFINITION     EXPERIMENT_DEFINITION    STORY_DEF INTERNAL
 
 namespace LogCleaner
 {
@@ -64,11 +60,27 @@ namespace LogCleaner
 		// 2048
 		public const ushort ACTTEXMAN = 12;
 		// 4096
+		public const ushort RESDEFADDB = 13;
 		// 8192
-		public const ushort RESDEFADDB = 14;
+		public const ushort MODMANAGER = 14;
 		// 16384
-		public const ushort MODMANAGER = 15;
+		public const ushort CONFIG_ATM = 15;
 		// 32768
+		public const ushort CONFIG_ATMCFG = 16;
+		public const ushort CONFIG_PART = 17;
+		public const ushort CONFIG_RESDEF = 18;
+		public const ushort CONFIG_STATIC = 19;
+		public const ushort CONFIG_EXPDEF = 20;
+		public const ushort CONFIG_AGENT = 21;
+		public const ushort CONFIG_PROP = 22;
+		public const ushort CONFIG_INTERNAL = 23;
+		public const ushort CONFIG_STORDEF = 24;
+		public const Int32 CONFIG_ALL = (2 << CONFIG_ATM) + (2 << CONFIG_ATMCFG) + (2 << CONFIG_PART) + (2 << CONFIG_RESDEF) + (2 << CONFIG_STATIC) + (2 << CONFIG_EXPDEF) + (2 << CONFIG_AGENT) + (2 << CONFIG_PROP) + (2 << CONFIG_INTERNAL) + (2 << CONFIG_STORDEF);
+		public const ushort PARTLOADERCOMP = 26;
+
+
+		// * Cannot find a PartModule of typename
+		//
 
 		static Dictionary<string, ushort> STATSKEYS = new Dictionary<string, ushort>()
 		{
@@ -86,21 +98,31 @@ namespace LogCleaner
 			{ "cannotplaydisabledaudiosource", CANTPLAYAS },
 			{ "Active Tex Manager", ACTTEXMAN },
 			{ "resource def added", RESDEFADDB },
+			{ "config_atm", CONFIG_ATM },
+			{ "config_atmcfg", CONFIG_ATMCFG },
+			{ "config_part", CONFIG_PART },
+			{ "config_resdef", CONFIG_RESDEF },
+			{ "config_static", CONFIG_STATIC },
+			{ "config_expdef", CONFIG_EXPDEF },
+			{ "config_agent", CONFIG_AGENT },
+			{ "config_prop", CONFIG_PROP },
+			{ "config_internal", CONFIG_INTERNAL },
+			{ "config_stordef", CONFIG_STORDEF },
+			{ "partloader_compil", PARTLOADERCOMP },
 			{ "modulemanager", MODMANAGER },
 
 		};
 
 		public static void Main (string[] args)
 		{
-			string inFile = ""; //@"d:\output_log.txt";
-			string outFile = ""; //@"d:\tmp.txt";
-			int remove_mask = 0;
-			//bool print_usage = false;
+			string inFile = "";
+			string outFile = "";
+			UInt32 remove_mask = 0;
 
 			BitArray bitmask;
 
 			const string version = "1.0";
-			const string release = "30/09/2014";
+			const string release = "01/10/2014";
 
 			const string emptyline = "^\\s*$";
 			const string uselessline = "\\(Filename:\\s+.*Line:\\s+-{0,1}\\d+\\)";
@@ -119,14 +141,24 @@ namespace LogCleaner
 			const string screenshot = "^SCREENSHOT\\!\\!";
 			const string cantplaydisaudiosrc = "^Can not play a disabled audio source";
 			const string acttexman = "^ActiveTextureManagement:";
-
 			const string resdefadb = "Resource RESOURCE_DEFINITION added to database";
 			const string modmanager = "\\[ModuleManager\\]";
+			const string config_atm = "^Config\\(ACTIVE_TEXTURE_MANAGER\\)";
+			const string config_atmcfg = "^Config\\(ACTIVE_TEXTURE_MANAGER_CONFIG\\)";
+			const string config_part = "^Config\\(PART\\)";
+			const string config_resdef = "^Config\\(RESOURCE_DEFINITION\\)";
+			const string config_static = "^Config\\(STATIC\\)";
+			const string config_expdef = "^Config\\(EXPERIMENT_DEFINITION\\)";
+			const string config_agent = "^Config\\(AGENT\\)";
+			const string config_prop = "^Config\\(PROP\\)";
+			const string config_internal = "^Config\\(INTERNAL\\)";
+			const string config_stordef = "^Config\\(STORY_DEF\\)";
+			const string partloader_compil = "^PartLoader:\\s+Compiling\\s+(Part|Internal Space)";
 
 			int lines_read = 0;
 			int line_written = 0;
 			int[] COUNTERS_BASE = new int[3];
-			int[] COUNTERS = new int[20];
+			int[] COUNTERS = new int[32];
 
 			Console.WriteLine ("LogCleaner " + version + ", a Kerbal Space Program logfile cleaner.\nJustin Kerbice " + release + "\n");
 
@@ -142,6 +174,7 @@ namespace LogCleaner
 				if (args.Length > 1 && args [1] != null && args [1] != "" && args [1] != "-") {
 					if (File.Exists (args [1])) {
 						Console.WriteLine ("Warning output file [" + args [1] + "] already exists");
+						// chg ext/name
 					}
 
 					outFile = args [1];
@@ -155,21 +188,22 @@ namespace LogCleaner
 				if (args.Length > 2 && args [2] != null && args [2] != "") {
 
 					if (args [2] == "ALL") {
+						Console.WriteLine ("MASK ALL !");
 						remove_mask = Int32.MaxValue;
+					} else if (args [2] == "CFG_ALL") {
+						Console.WriteLine ("MASK CONFIG ALL ! CFGALL=[" + CONFIG_ALL.ToString() + "]");
+						remove_mask = CONFIG_ALL;
+					} else {
+						try {
+							remove_mask = UInt32.Parse (args [2]);
+						} catch (Exception exception_caught) {
+							Console.WriteLine ("Invalid mask provided, use the full mask. Exception was: " + exception_caught.Message);
+							remove_mask = Int32.MaxValue;
+						}
 					}
 
-					try
-					{
-						remove_mask = Int32.Parse (args [2]);
-					}
-					catch (Exception exception_caught) {
-						Console.WriteLine ("Invalid mask provided, use the full mask. Exception was: " + exception_caught.Message);
-						remove_mask = Int32.MaxValue;
-					}
 					Console.WriteLine ("RM=[" + remove_mask.ToString () + "]");
-					bitmask = new BitArray (new int[] { remove_mask });
-
-					// ALL = 1111111111 = ? -1 !
+					bitmask = new BitArray (new int[] { (int)remove_mask });
 
 					//tmp display
 					Console.Write ("bitmask=[");
@@ -179,11 +213,9 @@ namespace LogCleaner
 					}
 					Console.WriteLine ("]");
 
-					if (bitmask.Get (LOADAUDIO) == true) {
-						Console.WriteLine ("LOADAUDIO msg disabled");
-					}
 				} else {
 					Console.WriteLine ("No filter prodived, use default.");
+					// default = 0, ~rewrtie this, convert after this block, set default... TC
 				}
 			} else {
 				Console.WriteLine ("Usage: LogCleaner <infile> [<outfile>] [filter mask]\n\tinfile\t\tthe file to clean\n\toutfile\t\tthe output file, default will be infile_clean.extension\n\tfilter mask\tthe line to remove from file.");
@@ -192,7 +224,7 @@ namespace LogCleaner
 
 			Console.WriteLine ("Processing " + inFile + "... outfile=[" + outFile + "]");
 
-			bitmask = new BitArray (new int[] { remove_mask });
+			bitmask = new BitArray (new int[] { (int)remove_mask });
 
 			// + check for size/readable, writable path, ~disk space left
 			using (StreamReader infile = File.OpenText (inFile)) {
@@ -292,10 +324,66 @@ namespace LogCleaner
 							continue;
 						}
 
+						if (bitmask.Get (CONFIG_ATM) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_atm)) {
+							COUNTERS [CONFIG_ATM]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_ATMCFG) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_atmcfg)) {
+							COUNTERS [CONFIG_ATMCFG]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_PART) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_part)) {
+							COUNTERS [CONFIG_PART]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_RESDEF) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_resdef)) {
+							COUNTERS [CONFIG_RESDEF]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_STATIC) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_static)) {
+							COUNTERS [CONFIG_STATIC]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_EXPDEF) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_expdef)) {
+							COUNTERS [CONFIG_EXPDEF]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_AGENT) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_agent)) {
+							COUNTERS [CONFIG_AGENT]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_PROP) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_prop)) {
+							COUNTERS [CONFIG_PROP]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_INTERNAL) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_internal)) {
+							COUNTERS [CONFIG_INTERNAL]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_STORDEF) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_stordef)) {
+							COUNTERS [CONFIG_STORDEF]++;
+							continue;
+						}
+
+						if (bitmask.Get (PARTLOADERCOMP) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, partloader_compil)) {
+							COUNTERS [PARTLOADERCOMP]++;
+							continue;
+						}
+
 //						if (System.Text.RegularExpressions.Regex.IsMatch (a_line, )) {
 //							COUNTERS []++;
-//							skip_this_line = true;
+//							continue;
 //						}
+
 
 						outfile.WriteLine (a_line);
 						line_written++;
