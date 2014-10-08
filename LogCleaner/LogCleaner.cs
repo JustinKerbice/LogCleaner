@@ -11,7 +11,11 @@
 //							add help message
 //	01/10/2014	add a bunch of new filter items (config, etc)
 //				add config CFG_ALL item
-//				
+//	03/10/2014	chg PARTLOADERCOMP 26 -> 25
+//	08/10/2014	fix "Parsing *" regexp
+//				chg put mods stuff together
+//				add "Added [soundfile...]" regexp 
+//				add some mods' messages: Mechjeb2, Kerbal Alarm Clock
 //
 using System;
 using System.IO;
@@ -35,37 +39,21 @@ namespace LogCleaner
 
 		// options
 		public const ushort PLATFASSEMB = 0;
-		// 1
 		public const ushort LOADASSEMB = 1;
-		// 2
 		public const ushort LOADING = 2;
-		// 4
 		public const ushort ASSEMBLOADER = 3;
-		// 8
 		public const ushort NOPLATFASSEM = 4;
-		// 16
 		public const ushort ADDONLOADER = 5;
-		// 32
 		public const ushort LOADAUDIO = 6;
-		// 64
 		public const ushort LOADTEX = 7;
-		// 128
 		public const ushort LOADMODEL = 8;
-		// 256
 		public const ushort WHEELCOLL = 9;
-		// 512
 		public const ushort SCREENSHOT = 10;
-		// 1024
 		public const ushort CANTPLAYAS = 11;
-		// 2048
 		public const ushort ACTTEXMAN = 12;
-		// 4096
 		public const ushort RESDEFADDB = 13;
-		// 8192
 		public const ushort MODMANAGER = 14;
-		// 16384
 		public const ushort CONFIG_ATM = 15;
-		// 32768
 		public const ushort CONFIG_ATMCFG = 16;
 		public const ushort CONFIG_PART = 17;
 		public const ushort CONFIG_RESDEF = 18;
@@ -76,8 +64,10 @@ namespace LogCleaner
 		public const ushort CONFIG_INTERNAL = 23;
 		public const ushort CONFIG_STORDEF = 24;
 		public const Int32 CONFIG_ALL = (2 << CONFIG_ATM) + (2 << CONFIG_ATMCFG) + (2 << CONFIG_PART) + (2 << CONFIG_RESDEF) + (2 << CONFIG_STATIC) + (2 << CONFIG_EXPDEF) + (2 << CONFIG_AGENT) + (2 << CONFIG_PROP) + (2 << CONFIG_INTERNAL) + (2 << CONFIG_STORDEF);
-		public const ushort PARTLOADERCOMP = 26;
-
+		public const ushort PARTLOADERCOMP = 25;
+		public const ushort ADDED_STUFF = 26;
+		public const ushort MECHJEB2 = 27;
+		public const ushort KERBALACLOCK = 28;
 
 		// * Cannot find a PartModule of typename
 		//
@@ -98,8 +88,6 @@ namespace LogCleaner
 			{ "cannotplaydisabledaudiosource", CANTPLAYAS },
 			{ "Active Tex Manager", ACTTEXMAN },
 			{ "resource def added", RESDEFADDB },
-			{ "config_atm", CONFIG_ATM },
-			{ "config_atmcfg", CONFIG_ATMCFG },
 			{ "config_part", CONFIG_PART },
 			{ "config_resdef", CONFIG_RESDEF },
 			{ "config_static", CONFIG_STATIC },
@@ -109,7 +97,12 @@ namespace LogCleaner
 			{ "config_internal", CONFIG_INTERNAL },
 			{ "config_stordef", CONFIG_STORDEF },
 			{ "partloader_compil", PARTLOADERCOMP },
+			{ "added_stuff", ADDED_STUFF },
+			{ "config_atm", CONFIG_ATM },
+			{ "config_atmcfg", CONFIG_ATMCFG },
 			{ "modulemanager", MODMANAGER },
+			{ "mechjeb2", MECHJEB2 },
+			{ "kerbalaclock", KERBALACLOCK },
 
 		};
 
@@ -126,7 +119,7 @@ namespace LogCleaner
 
 			const string emptyline = "^\\s*$";
 			const string uselessline = "\\(Filename:\\s+.*Line:\\s+-{0,1}\\d+\\)";
-			const string parsingwdca = "^Parsing\\s+\\(bool|float|string|int\\)";
+			const string parsingwdca = "^Parsing\\s+";
 			// beware: there is also (Filename: line: -1)
 			const string platassemb = "^Platform\\s+assembly:";
 			const string loadassem = "^Load\\(Assembly\\):";
@@ -142,9 +135,6 @@ namespace LogCleaner
 			const string cantplaydisaudiosrc = "^Can not play a disabled audio source";
 			const string acttexman = "^ActiveTextureManagement:";
 			const string resdefadb = "Resource RESOURCE_DEFINITION added to database";
-			const string modmanager = "\\[ModuleManager\\]";
-			const string config_atm = "^Config\\(ACTIVE_TEXTURE_MANAGER\\)";
-			const string config_atmcfg = "^Config\\(ACTIVE_TEXTURE_MANAGER_CONFIG\\)";
 			const string config_part = "^Config\\(PART\\)";
 			const string config_resdef = "^Config\\(RESOURCE_DEFINITION\\)";
 			const string config_static = "^Config\\(STATIC\\)";
@@ -154,6 +144,14 @@ namespace LogCleaner
 			const string config_internal = "^Config\\(INTERNAL\\)";
 			const string config_stordef = "^Config\\(STORY_DEF\\)";
 			const string partloader_compil = "^PartLoader:\\s+Compiling\\s+(Part|Internal Space)";
+			const string added_stuff = "^Added\\s+";
+
+			const string modmanager = "\\[ModuleManager\\]";
+			const string config_atm = "^Config\\(ACTIVE_TEXTURE_MANAGER\\)";
+			const string config_atmcfg = "^Config\\(ACTIVE_TEXTURE_MANAGER_CONFIG\\)";
+			const string mechjeb2 = "^\\[MechJeb2\\]\\s+";
+			const string kerbalaclock = ",KerbalAlarmClock"; //,Loading:\\s+";
+
 
 			int lines_read = 0;
 			int line_written = 0;
@@ -175,14 +173,14 @@ namespace LogCleaner
 					if (File.Exists (args [1])) {
 						Console.WriteLine ("Warning output file [" + args [1] + "] already exists");
 						// chg ext/name
+						//outFile = Path.GetDirectoryName (args [1]) + "\\" + Path.GetFileNameWithoutExtension (args [1]) + "_2.txt";
+						//Console.WriteLine ("output file name = [" + outFile + "]");
 					}
 
 					outFile = args [1];
 				} else {
 					outFile = Path.GetDirectoryName (args [0]) + "\\" + Path.GetFileNameWithoutExtension (args [0]) + "_clean.txt";
 					Console.WriteLine ("output file name = [" + outFile + "]");
-					//Console.WriteLine ("output file not specified, abort.");
-					//Environment.Exit (3);
 				}
 
 				if (args.Length > 2 && args [2] != null && args [2] != "") {
@@ -318,22 +316,7 @@ namespace LogCleaner
 							COUNTERS [RESDEFADDB]++;
 							continue;
 						}
-
-						if (bitmask.Get (MODMANAGER) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, modmanager)) {
-							COUNTERS [MODMANAGER]++;
-							continue;
-						}
-
-						if (bitmask.Get (CONFIG_ATM) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_atm)) {
-							COUNTERS [CONFIG_ATM]++;
-							continue;
-						}
-
-						if (bitmask.Get (CONFIG_ATMCFG) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_atmcfg)) {
-							COUNTERS [CONFIG_ATMCFG]++;
-							continue;
-						}
-
+							
 						if (bitmask.Get (CONFIG_PART) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_part)) {
 							COUNTERS [CONFIG_PART]++;
 							continue;
@@ -376,6 +359,36 @@ namespace LogCleaner
 
 						if (bitmask.Get (PARTLOADERCOMP) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, partloader_compil)) {
 							COUNTERS [PARTLOADERCOMP]++;
+							continue;
+						}
+
+						if (bitmask.Get (ADDED_STUFF) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, added_stuff)) {
+							COUNTERS [ADDED_STUFF]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_ATM) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_atm)) {
+							COUNTERS [CONFIG_ATM]++;
+							continue;
+						}
+
+						if (bitmask.Get (CONFIG_ATMCFG) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, config_atmcfg)) {
+							COUNTERS [CONFIG_ATMCFG]++;
+							continue;
+						}
+
+						if (bitmask.Get (MODMANAGER) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, modmanager)) {
+							COUNTERS [MODMANAGER]++;
+							continue;
+						}
+
+						if (bitmask.Get (MECHJEB2) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, mechjeb2)) {
+							COUNTERS [MECHJEB2]++;
+							continue;
+						}
+
+						if (bitmask.Get (KERBALACLOCK) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, kerbalaclock)) {
+							COUNTERS [KERBALACLOCK]++;
 							continue;
 						}
 
