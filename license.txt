@@ -1,0 +1,26 @@
+Whatever license 1.1		27/02/2014
+
+
+whatever license is very simple and need only one single sentence to describe everything:
+
+do whatever you want "and remember respect is everything !*"
+
+
+All the content can be use for any purposes, can be extended, modified, use as a base, or anything else, you just have to give proper credit.
+Any purpose include commercial use as well as private project.
+Content can be used as-is, modified, tuned, tweaked, used for another purpose than it has been initially designed for, included in other project, disassembled and use partially.
+
+
+Content include all text material, textures, pictures, templates, 3D models in any format, Unity scene, source code or anything else.
+
+EXCEPTION: evil companies are not welcome here and should not, under any condition, use the licensed content for any purpose, even private !
+These companies include: Google, Facebook, Twitter, Microsoft, Apple, Samsung.
+
+This (black)list is subject to change in the future, but removal of your company is not even possible in your craziest dream.
+
+Final note: using licensed content doesn't mean at all you have to release them under the same license (remember the infamous "radioactive" GPL crazy debate and battle).
+
+(* copyright Rockstar Games, quoted from game GTA 2)
+
+
+Kerbice Group.
