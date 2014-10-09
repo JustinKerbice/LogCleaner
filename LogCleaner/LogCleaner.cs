@@ -16,6 +16,7 @@
 //				chg put mods stuff together
 //				add "Added [soundfile...]" regexp 
 //				add some mods' messages: Mechjeb2, Kerbal Alarm Clock
+//	09/10/2014	chg reordering of regexp mask to have stock first then mods
 //
 using System;
 using System.IO;
@@ -35,9 +36,7 @@ namespace LogCleaner
 		public const ushort USELESSLINES = 1;
 		public const ushort PARSINGLINES = 2;
 
-		// BEWARE: counters index and these collide !
-
-		// options
+		// Filter mask values
 		public const ushort PLATFASSEMB = 0;
 		public const ushort LOADASSEMB = 1;
 		public const ushort LOADING = 2;
@@ -50,22 +49,23 @@ namespace LogCleaner
 		public const ushort WHEELCOLL = 9;
 		public const ushort SCREENSHOT = 10;
 		public const ushort CANTPLAYAS = 11;
-		public const ushort ACTTEXMAN = 12;
-		public const ushort RESDEFADDB = 13;
-		public const ushort MODMANAGER = 14;
-		public const ushort CONFIG_ATM = 15;
-		public const ushort CONFIG_ATMCFG = 16;
-		public const ushort CONFIG_PART = 17;
-		public const ushort CONFIG_RESDEF = 18;
-		public const ushort CONFIG_STATIC = 19;
-		public const ushort CONFIG_EXPDEF = 20;
-		public const ushort CONFIG_AGENT = 21;
-		public const ushort CONFIG_PROP = 22;
-		public const ushort CONFIG_INTERNAL = 23;
-		public const ushort CONFIG_STORDEF = 24;
+		public const ushort RESDEFADDB = 12;
+		public const ushort CONFIG_PART = 13;
+		public const ushort CONFIG_RESDEF = 14;
+		public const ushort CONFIG_STATIC = 15;
+		public const ushort CONFIG_EXPDEF = 16;
+		public const ushort CONFIG_AGENT = 17;
+		public const ushort CONFIG_PROP = 18;
+		public const ushort CONFIG_INTERNAL = 19;
+		public const ushort CONFIG_STORDEF = 20;
 		public const Int32 CONFIG_ALL = (2 << CONFIG_ATM) + (2 << CONFIG_ATMCFG) + (2 << CONFIG_PART) + (2 << CONFIG_RESDEF) + (2 << CONFIG_STATIC) + (2 << CONFIG_EXPDEF) + (2 << CONFIG_AGENT) + (2 << CONFIG_PROP) + (2 << CONFIG_INTERNAL) + (2 << CONFIG_STORDEF);
-		public const ushort PARTLOADERCOMP = 25;
-		public const ushort ADDED_STUFF = 26;
+		public const ushort PARTLOADERCOMP = 21;
+		public const ushort ADDED_STUFF = 22;
+
+		public const ushort MODMANAGER = 23;
+		public const ushort CONFIG_ATM = 24;
+		public const ushort CONFIG_ATMCFG = 25;
+		public const ushort ACTTEXMAN = 26;
 		public const ushort MECHJEB2 = 27;
 		public const ushort KERBALACLOCK = 28;
 
