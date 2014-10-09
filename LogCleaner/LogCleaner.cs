@@ -186,10 +186,10 @@ namespace LogCleaner
 				if (args.Length > 2 && args [2] != null && args [2] != "") {
 
 					if (args [2] == "ALL") {
-						Console.WriteLine ("MASK ALL !");
+						Console.WriteLine ("MASK ALL");
 						remove_mask = Int32.MaxValue;
 					} else if (args [2] == "CFG_ALL") {
-						Console.WriteLine ("MASK CONFIG ALL ! CFGALL=[" + CONFIG_ALL.ToString() + "]");
+						Console.WriteLine ("MASK CONFIG ALL, CFGALL=[" + CONFIG_ALL.ToString() + "]");
 						remove_mask = CONFIG_ALL;
 					} else {
 						try {
@@ -200,7 +200,7 @@ namespace LogCleaner
 						}
 					}
 
-					Console.WriteLine ("RM=[" + remove_mask.ToString () + "]");
+					//Console.WriteLine ("RM=[" + remove_mask.ToString () + "]");
 					bitmask = new BitArray (new int[] { (int)remove_mask });
 
 					//tmp display
