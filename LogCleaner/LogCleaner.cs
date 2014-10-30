@@ -17,6 +17,7 @@
 //				add "Added [soundfile...]" regexp 
 //				add some mods' messages: Mechjeb2, Kerbal Alarm Clock
 //	09/10/2014	chg reordering of regexp mask to have stock first then mods
+//  30/10/2014	add 0.25 Config(STRATEGY), Config(STRATEGY_DEPARTMENT), [ScenarioDestructibles]: items
 //
 using System;
 using System.IO;
@@ -26,6 +27,7 @@ using System.Collections.Generic;
 // options:
 //	search for a given pattern (module or part name)
 // highlight exception or warning
+
 
 namespace LogCleaner
 {
@@ -58,16 +60,18 @@ namespace LogCleaner
 		public const ushort CONFIG_PROP = 18;
 		public const ushort CONFIG_INTERNAL = 19;
 		public const ushort CONFIG_STORDEF = 20;
-		public const Int32 CONFIG_ALL = (2 << CONFIG_ATM) + (2 << CONFIG_ATMCFG) + (2 << CONFIG_PART) + (2 << CONFIG_RESDEF) + (2 << CONFIG_STATIC) + (2 << CONFIG_EXPDEF) + (2 << CONFIG_AGENT) + (2 << CONFIG_PROP) + (2 << CONFIG_INTERNAL) + (2 << CONFIG_STORDEF);
-		public const ushort PARTLOADERCOMP = 21;
-		public const ushort ADDED_STUFF = 22;
+		public const ushort CONFIG_STRATEGY = 21;
+		public const Int32 CONFIG_ALL = (2 << CONFIG_ATM) + (2 << CONFIG_ATMCFG) + (2 << CONFIG_PART) + (2 << CONFIG_RESDEF) + (2 << CONFIG_STATIC) + (2 << CONFIG_EXPDEF) + (2 << CONFIG_AGENT) + (2 << CONFIG_PROP) + (2 << CONFIG_INTERNAL) + (2 << CONFIG_STORDEF) + (2 << CONFIG_STRATEGY);
+		public const ushort PARTLOADERCOMP = 22;
+		public const ushort SCENDESTRU = 23;
+		public const ushort ADDED_STUFF = 24;
 
-		public const ushort MODMANAGER = 23;
-		public const ushort CONFIG_ATM = 24;
-		public const ushort CONFIG_ATMCFG = 25;
-		public const ushort ACTTEXMAN = 26;
-		public const ushort MECHJEB2 = 27;
-		public const ushort KERBALACLOCK = 28;
+		public const ushort MODMANAGER = 25;
+		public const ushort CONFIG_ATM = 26;
+		public const ushort CONFIG_ATMCFG = 27;
+		public const ushort ACTTEXMAN = 28;
+		public const ushort MECHJEB2 = 29;
+		public const ushort KERBALACLOCK = 30;
 
 		// * Cannot find a PartModule of typename
 		//
@@ -96,7 +100,9 @@ namespace LogCleaner
 			{ "config_prop", CONFIG_PROP },
 			{ "config_internal", CONFIG_INTERNAL },
 			{ "config_stordef", CONFIG_STORDEF },
+			{ "config_strategy", CONFIG_STRATEGY },
 			{ "partloader_compil", PARTLOADERCOMP },
+			{ "scenario_destructibles", SCENDESTRU },
 			{ "added_stuff", ADDED_STUFF },
 			{ "config_atm", CONFIG_ATM },
 			{ "config_atmcfg", CONFIG_ATMCFG },
@@ -114,8 +120,8 @@ namespace LogCleaner
 
 			BitArray bitmask;
 
-			const string version = "1.0";
-			const string release = "01/10/2014";
+			const string version = "1.1";
+			const string release = "30/10/2014";
 
 			const string emptyline = "^\\s*$";
 			const string uselessline = "\\(Filename:\\s+.*Line:\\s+-{0,1}\\d+\\)";
@@ -143,7 +149,9 @@ namespace LogCleaner
 			const string config_prop = "^Config\\(PROP\\)";
 			const string config_internal = "^Config\\(INTERNAL\\)";
 			const string config_stordef = "^Config\\(STORY_DEF\\)";
+			const string config_strategy = "^Config\\(STRATEGY";
 			const string partloader_compil = "^PartLoader:\\s+Compiling\\s+(Part|Internal Space)";
+			const string scenario_destructibles = "\\[ScenarioDestructibles\\]:";
 			const string added_stuff = "^Added\\s+";
 
 			const string modmanager = "\\[ModuleManager\\]";
@@ -357,8 +365,18 @@ namespace LogCleaner
 							continue;
 						}
 
+						if (System.Text.RegularExpressions.Regex.IsMatch (a_line, config_strategy)) {
+							COUNTERS [CONFIG_STRATEGY]++;
+							continue;
+						}
+
 						if (bitmask.Get (PARTLOADERCOMP) == true && System.Text.RegularExpressions.Regex.IsMatch (a_line, partloader_compil)) {
 							COUNTERS [PARTLOADERCOMP]++;
+							continue;
+						}
+
+						if (System.Text.RegularExpressions.Regex.IsMatch (a_line, scenario_destructibles)) {
+							COUNTERS [SCENDESTRU]++;
 							continue;
 						}
 
